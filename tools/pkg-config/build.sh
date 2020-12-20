@@ -1,11 +1,6 @@
-#!/bin/bash
-ROOT="../.."
-if [ -f "$ROOT/variables.sh" ]; then
-	. "$ROOT/variables.sh"
-fi
-. "$ROOT/ghost.sh"
+#!/bin/sh
+. "../../ghost.sh"
 
-# Creates a pkg-config wrapper from the template
 echo "Installing pkg-config wrapper"
 OUT_PATH=$TOOLCHAIN_BASE/bin
 mkdir -p $OUT_PATH

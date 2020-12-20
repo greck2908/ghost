@@ -18,47 +18,9 @@
  *                                                                           *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include <stdio.h>
-#include <ghost.h>
+#define TEST_MESSAGING		0
+#define TEST_UI				1
 
-#define ASSERT(expression)	\
-	if(!(expression)) {		\
-		klog("[Test failed] %s, line %i: " #expression, __FUNCTION__, __LINE__);	\
-		return test_result_t(0, 1);													\
-	}
+#define SELECTED_TEST		TEST_UI
 
-#define TEST_SUCCESSFUL		\
-	klog("[Test successful] %s, line %i", __FUNCTION__, __LINE__); \
-	return test_result_t(1, 0);
-
-#define TEST_FAILED			\
-	klog("[Test failed] %s, line %i", __FUNCTION__, __LINE__); \
-	return test_result_t(0, 1);
-
-
-class test_result_t {
-public:
-	int successful;
-	int failed;
-	test_result_t() : successful(0), failed(0) {}
-	test_result_t(int successful, int failed) : successful(successful), failed(failed) {}
-
-	friend test_result_t operator+(const test_result_t& a, const test_result_t& b) {
-		test_result_t out;
-		out.successful = a.successful + b.successful;
-		out.failed = a.failed + b.failed;
-		return out;
-	}
-
-	test_result_t& operator+=(const test_result_t& other) {
-		this->successful += other.successful;
-		this->failed += other.failed;
-		return *this;
-	}
-};
-
-test_result_t runMessageTest();
-
-test_result_t runStdioTest();
-
-test_result_t runThreadTests();
+void run_test(int argc, char** argv);

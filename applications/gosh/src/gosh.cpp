@@ -20,7 +20,7 @@
 
 #include <iostream>
 #include <ghostuser/io/terminal.hpp>
-#include <ghostuser/utils/local.hpp>
+#include <ghost/utils/local.hpp>
 #include <gosh.hpp>
 #include <stdio.h>
 #include <parser.hpp>
@@ -218,13 +218,6 @@ int main(int argc, char *argv[]) {
 
 	g_terminal::setCursor(g_term_cursor_position(0, 0));
 
-	// check if we're running headless
-	bool running_headless = (g_task_get_id("terminal_headless") != -1);
-	if (running_headless) {
-		std::cout
-				<< "Enter 'read README' for a quick introduction. Use 'launch ui' to run the GUI."
-				<< std::endl;
-	}
 	char* cwdbuf = new char[G_PATH_MAX];
 
 	while (true) {
@@ -290,7 +283,8 @@ int main(int argc, char *argv[]) {
 			g_fd out_pipe_w;
 			g_fd out_pipe_r;
 			if (num_calls > 1 && c < num_calls - 1) {
-				g_fs_pipe_status pipe_stat = g_pipe(&out_pipe_w, &out_pipe_r);
+				g_fs_pipe_status pipe_stat;
+				g_pipe_s(&out_pipe_w, &out_pipe_r, &pipe_stat);
 
 				if (pipe_stat != G_FS_PIPE_SUCCESSFUL) {
 					std::cerr << "failed to create output pipe when spawning '"

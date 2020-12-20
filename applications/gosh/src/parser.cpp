@@ -20,7 +20,7 @@
 
 #include "parser.hpp"
 #include <iostream>
-#include <ghostuser/utils/local.hpp>
+#include <ghost/utils/local.hpp>
 
 /**
  *

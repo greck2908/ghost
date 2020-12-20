@@ -20,7 +20,7 @@
 
 #include <headless_screen.hpp>
 #include <string.h>
-#include <ghostuser/utils/utils.hpp>
+#include <ghostuser/utils/Utils.hpp>
 #include <ghost.h>
 #include <stdio.h>
 

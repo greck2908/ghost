@@ -1,4 +1,4 @@
-ENTRY (loaderEntry)
+ENTRY (loader)
 
 SECTIONS
 {

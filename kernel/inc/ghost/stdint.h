@@ -21,8 +21,8 @@
 #ifndef __GHOST_SYS_STDINT__
 #define __GHOST_SYS_STDINT__
 
-#include <stddef.h>
 #include "ghost/common.h"
+#include <stddef.h>
 
 __BEGIN_C
 

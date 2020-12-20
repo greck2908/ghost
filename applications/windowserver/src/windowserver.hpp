@@ -23,7 +23,6 @@
 
 #include <components/component.hpp>
 #include <components/screen.hpp>
-#include <components/label.hpp>
 #include <events/event_processor.hpp>
 #include "output/video_output.hpp"
 #include "interface/command_message_responder_thread.hpp"
@@ -91,6 +90,11 @@ public:
 	 *
 	 */
 	void triggerRender();
+
+	/**
+	 *
+	 */
+	void cleanup(g_pid process);
 
 };
 

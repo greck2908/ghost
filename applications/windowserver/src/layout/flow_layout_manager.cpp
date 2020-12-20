@@ -21,7 +21,7 @@
 #include <components/component.hpp>
 #include <vector>
 
-#include <ghostuser/utils/logger.hpp>
+#include <ghostuser/utils/Logger.hpp>
 #include <layout/flow_layout_manager.hpp>
 
 #include <typeinfo>
@@ -35,15 +35,14 @@ void flow_layout_manager_t::layout() {
 		return;
 	}
 
-	std::vector<component_child_reference_t>& children = component->getChildren();
+	std::vector<component_t*>& children = component->getChildren();
 
 	int x = 0;
 	int y = 0;
 	int lineHeight = 0;
 
 	g_rectangle parentBounds = component->getBounds();
-	for (auto& ref : children) {
-		component_t* c = ref.component;
+	for (component_t* c : children) {
 
 		g_dimension preferredSize = c->getPreferredSize();
 

@@ -1,9 +1,5 @@
-#!/bin/bash
-ROOT="../.."
-if [ -f "$ROOT/variables.sh" ]; then
-	. "$ROOT/variables.sh"
-fi
-. "$ROOT/ghost.sh"
+#!/bin/sh
+. "../../ghost.sh"
 
 TARGET=$1
 

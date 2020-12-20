@@ -26,7 +26,7 @@
 #include <ghostuser/graphics/text/text_alignment.hpp>
 #include <ghostuser/ui/properties.hpp>
 #include <ghostuser/ui/interface_specification.hpp>
-#include <ghostuser/utils/logger.hpp>
+#include <ghostuser/utils/Logger.hpp>
 #include <math.h>
 
 /**
@@ -35,7 +35,7 @@
 button_t::button_t() :
 		insets(g_insets(0, 0, 0, 0)), action_component_t(this) {
 	enabled = true;
-	addChild(&label, COMPONENT_CHILD_REFERENCE_TYPE_INTERNAL);
+	addChild(&label);
 	label.setAlignment(g_text_alignment::CENTER);
 }
 

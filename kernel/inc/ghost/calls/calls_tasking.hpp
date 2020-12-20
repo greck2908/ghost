@@ -102,7 +102,7 @@ typedef struct {
  * 		whether or not to set the atom once finished
  *
  * @field try_only
- * 		whether or not to only try locking the atom
+ * 		whether or not to only try setting the atom
  *
  * @field was_set
  * 		whether the atom was set, when trying only
@@ -130,14 +130,14 @@ typedef struct {
 	char* identifier;
 
 	uint8_t successful;
-}__attribute__((packed)) g_syscall_task_id_register;
+}__attribute__((packed)) g_task_id_register;
 
 /**
  * @field identifier
  * 		the identifier
  *
  * @field resultTaskId
- * 		the task id, or G_TID_NONE if not successful
+ * 		the task id, or -1 if not successful
  */
 typedef struct {
 	char* identifier;
@@ -182,29 +182,29 @@ typedef struct {
  */
 typedef struct {
 	uint8_t irq;
-	g_virtual_address handlerAddress;
-	g_virtual_address returnAddress;
+	uintptr_t handler;
+	uintptr_t callback;
 	g_register_irq_handler_status status;
 }__attribute__((packed)) g_syscall_register_irq_handler;
 
 /**
  * @field signal
  * 		signal to register for
- * @field handlerAddress
+ * @field handler
  * 		address of the handler function
- * @field callbackAddress
+ * @field callback
  * 		address of the function to be returned to when
  * 		the handler function returns
- * @field previousHandlerAddress
+ * @field previous_handler
  * 		address of the previously registered handler
  * @field status
  * 		result of the command
  */
 typedef struct {
 	int signal;
-	g_virtual_address handlerAddress;
-	g_virtual_address returnAddress;
-	g_virtual_address previousHandlerAddress;
+	uintptr_t handler;
+	uintptr_t callback;
+	uintptr_t previous_handler;
 	g_register_signal_handler_status status;
 }__attribute__((packed)) g_syscall_register_signal_handler;
 
@@ -221,13 +221,5 @@ typedef struct {
 	g_pid process;
 	g_raise_signal_status status;
 }__attribute__((packed)) g_syscall_raise_signal;
-
-/**
- * @field processInfo
- * 		pointer to the process info
- */
-typedef struct {
-	g_process_info* processInfo;
-}__attribute__((packed)) g_syscall_process_get_info;
 
 #endif

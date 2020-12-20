@@ -1,7 +1,7 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  *                                                                           *
  *  Ghost, a micro-kernel based operating system for the x86 architecture    *
- *  Copyright (C) 2015, Max Schlüssel <lokoxe@gmail.com>                     *
+ *  Copyright (C) 2015, Max SchlÃ¼ssel <lokoxe@gmail.com>                     *
  *                                                                           *
  *  This program is free software: you can redistribute it and/or modify     *
  *  it under the terms of the GNU General Public License as published by     *
@@ -31,8 +31,8 @@ __BEGIN_C
  *
  */
 typedef int g_kernquery_status;
-#define G_KERNQUERY_STATUS_SUCCESSFUL ((g_kernquery_status) 0)
-#define G_KERNQUERY_STATUS_UNKNOWN_ID ((g_kernquery_status) 1)
+static const g_kernquery_status G_KERNQUERY_STATUS_SUCCESSFUL = 0;
+static const g_kernquery_status G_KERNQUERY_STATUS_UNKNOWN_ID = 1;
 
 /**
  * Command IDs

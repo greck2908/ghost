@@ -1,24 +1,18 @@
 #!/bin/bash
-ROOT="../.."
-if [ -f "$ROOT/variables.sh" ]; then
-	. "$ROOT/variables.sh"
-fi
-. "$ROOT/ghost.sh"
 
-#
-# Ghost port installation script
-#
-# Automatically downloads, unzips, patches and builds packages as they are configured.
-# Look at the existing packages for reference.
-#
+echo ""
+echo "ghost-port"
+echo "=========="
+
 PACKAGE="$1"
 BUILD_ROOT="build"
-HOST="$CROSS_HOST"
-PREFIX="/system"
+SYSROOT=/ghost/sysroot
+HOST=i686-ghost
+PREFIX=/system
 REQUIRES_INSTALL_IN_SOURCE_DIR=0
 
 
-# Helper to quit if a process fails
+# quit on failure
 fail() {
 	echo "! $1"
 	echo
@@ -26,8 +20,7 @@ fail() {
 	exit 1
 }
 
-
-# Checks if help was requested
+# check package parameter
 if [ "$PACKAGE" = "--help" ]; then
 	echo ""
 	echo "This script has the ability to automatically download, patch, configure and"
@@ -86,7 +79,7 @@ fi
 
 
 
-# include package script
+# include package bash
 . $PACKAGE/package.sh
 if [ -z "$REMOTE_ARCHIVE" ]; then
 	fail "port did not specify REMOTE_ARCHIVE"
@@ -135,11 +128,7 @@ port_install | sed 's/^/    /'
 cd $BACK
 
 # clean up
-if [ "$DONT_CLEAN_BUILD" = "1" ]; then
-	echo "not cleaning up build directory"
-else
-	rm -rf $BUILD_ROOT/$PACKAGE
-fi
+rm -rf $BUILD_ROOT/$PACKAGE
 
 # finish successfully
 exit 0

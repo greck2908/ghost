@@ -29,10 +29,10 @@ void scrollpane_t::setViewPort(component_t* component) {
 	viewPort = component;
 	addChild(component);
 
-	addChild(&horizontalScrollbar, COMPONENT_CHILD_REFERENCE_TYPE_INTERNAL);
+	addChild(&horizontalScrollbar);
 	horizontalScrollbar.setScrollHandler(this);
 
-	addChild(&verticalScrollbar, COMPONENT_CHILD_REFERENCE_TYPE_INTERNAL);
+	addChild(&verticalScrollbar);
 	verticalScrollbar.setScrollHandler(this);
 }
 

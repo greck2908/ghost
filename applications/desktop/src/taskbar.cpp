@@ -9,7 +9,6 @@ taskbar_t::taskbar_t(desktop_t* desktop) :
 	font = g_font_loader::getDefault();
 
 	bounds = g_rectangle(0, desktop->screen_dim.height - TASKBAR_HEIGHT, desktop->screen_dim.width, TASKBAR_HEIGHT);
-	start_bounds = g_rectangle(20, bounds.y, 100, bounds.height);
 }
 
 /**
@@ -23,6 +22,7 @@ void taskbar_t::paint(cairo_t* cr) {
 	cairo_restore(cr);
 
 	// start button
+	g_rectangle start_bounds(20, bounds.y, 100, bounds.height);
 
 	cairo_save(cr);
 	if (start_bounds.contains(desktop->cursor_position)) {
@@ -67,14 +67,10 @@ void taskbar_t::handle_mouse_event(g_ui_component_mouse_event* e) {
 	static bool startPressed = false;
 
 	if (e->type == G_MOUSE_EVENT_PRESS) {
-		if (start_bounds.contains(desktop->cursor_position)) {
-			startPressed = true;
-		}
+		startPressed = true;
 	}
 	if (e->type == G_MOUSE_EVENT_RELEASE) {
-		if (start_bounds.contains(desktop->cursor_position)) {
-			g_create_thread((void*) spawn_terminal);
-		}
+		g_create_thread((void*) spawn_terminal);
 	}
 
 }

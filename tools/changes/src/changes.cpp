@@ -19,10 +19,14 @@
  *                                                                           *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include <limits.h>
+#include "changes.hpp"
+
+using namespace std;
+
 #include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <limits.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -31,88 +35,74 @@
 #include <iostream>
 #include <sstream>
 
-#include "changes.hpp"
-
-using namespace std;
-
 /**
  *
  */
-int main(int argc, char **argv)
-{
-	map<string, string> params = parse_commands(argc, argv);
+int main(int argc, char** argv) {
 
-	char *self = argv[0];
+	map < string, string > params = parse_commands(argc, argv);
+
+	char* self = argv[0];
 	changes_mode_t mode = CHANGES_MODE_NONE;
 	string file;
 	string tablepath = DEFAULT_TABLEPATH;
 
 	// read parameters
-	for (auto entry : params)
-	{
+	for (auto entry : params) {
 
-		if (entry.first == FLAG_CHECK || entry.first == FLAG_CHECK_L)
-		{
-			if (mode != CHANGES_MODE_NONE) return usage_message(self);
+		if (entry.first == FLAG_CHECK || entry.first == FLAG_CHECK_L) {
+			if (mode != CHANGES_MODE_NONE) {
+				return usage_message(self);
+			}
 			mode = CHANGES_MODE_CHECK;
 			file = entry.second;
-		}
-		else if (entry.first == FLAG_STORE || entry.first == FLAG_STORE_L)
-		{
-			if (mode != CHANGES_MODE_NONE) return usage_message(self);
+
+		} else if (entry.first == FLAG_STORE || entry.first == FLAG_STORE_L) {
+			if (mode != CHANGES_MODE_NONE) {
+				return usage_message(self);
+			}
 			mode = CHANGES_MODE_STORE;
 			file = entry.second;
-		}
-		else if (entry.first == FLAG_CLEAR)
-		{
-			if (mode != CHANGES_MODE_NONE) return usage_message(self);
+
+		} else if (entry.first == FLAG_CLEAR) {
+			if (mode != CHANGES_MODE_NONE) {
+				return usage_message(self);
+			}
 			mode = CHANGES_MODE_CLEAR;
-		}
-		else if (entry.first == FLAG_OUT || entry.first == FLAG_OUT_L)
-		{
+
+		} else if (entry.first == FLAG_OUT || entry.first == FLAG_OUT_L) {
 			tablepath = entry.second;
-		}
-		else if (entry.first == FLAG_HELP)
-		{
+
+		} else if (entry.first == FLAG_HELP) {
 			return help(self);
-		}
-		else if (entry.first == FLAG_VERSION)
-		{
+
+		} else if (entry.first == FLAG_VERSION) {
 			return version();
-		}
-		else
-		{
+
+		} else {
 			return unknown_flag(self, entry.first);
 		}
 	}
 
-	if (mode == CHANGES_MODE_NONE)
-	{
+	if (mode == CHANGES_MODE_NONE) {
 		return usage_message(self);
 	}
 
 	// check if file exists
 	string absolute = get_absolute_path(file);
-	if (mode == CHANGES_MODE_CHECK || mode == CHANGES_MODE_STORE)
-	{
-		if (access(absolute.c_str(), F_OK) == -1)
-		{
+	if (mode == CHANGES_MODE_CHECK || mode == CHANGES_MODE_STORE) {
+		if (access(absolute.c_str(), F_OK) == -1) {
 			fprintf(stderr, "error: '%s' does not exist\n", absolute.c_str());
 			return -1;
 		}
 	}
 
-	if (mode == CHANGES_MODE_CHECK)
-	{
+	if (mode == CHANGES_MODE_CHECK) {
 		return check(absolute, tablepath);
-	}
-	else if (mode == CHANGES_MODE_STORE)
-	{
+	} else if (mode == CHANGES_MODE_STORE) {
 		store(absolute, tablepath);
 		return 0;
-	}
-	else if (mode == CHANGES_MODE_CLEAR)
-	{
+	} else if (mode == CHANGES_MODE_CLEAR) {
 		clear(tablepath);
 		return 0;
 	}
@@ -120,44 +110,34 @@ int main(int argc, char **argv)
 /**
  *
  */
-map<string, string> parse_commands(int argc, char **argv)
-{
-	map<string, string> values;
+map<string, string> parse_commands(int argc, char** argv) {
+	map < string, string > values;
 
 	string flag;
 	bool atflag = true;
 
-	for (int i = 1; i < argc; i++)
-	{
+	for (int i = 1; i < argc; i++) {
 		string param = argv[i];
 
-		if (param.size() == 0)
-		{
+		if (param.size() == 0) {
 			continue;
 		}
 
-		if (atflag)
-		{
+		if (atflag) {
 			flag = param;
 
-			if (flag == FLAG_HELP || flag == FLAG_VERSION || flag == FLAG_CLEAR)
-			{
+			if (flag == FLAG_HELP || flag == FLAG_VERSION || flag == FLAG_CLEAR) {
 				values[flag] = "";
-			}
-			else
-			{
+			} else {
 				atflag = false;
 			}
-		}
-		else
-		{
+		} else {
 			values[flag] = param;
 			atflag = true;
 		}
 	}
 
-	if (!atflag)
-	{
+	if (!atflag) {
 		values[flag] = "";
 	}
 
@@ -167,8 +147,7 @@ map<string, string> parse_commands(int argc, char **argv)
 /**
  *
  */
-void store(string path, string tablepath)
-{
+void store(string path, string tablepath) {
 	long lastModify = get_last_modify_date(path);
 	map<string, long> entries;
 	read_change_table(tablepath, entries);
@@ -180,16 +159,13 @@ void store(string path, string tablepath)
 /**
  *
  */
-int check(string path, string tablepath)
-{
+int check(string path, string tablepath) {
 	long lastModify = get_last_modify_date(path);
 	map<string, long> entries;
 	read_change_table(tablepath, entries);
 
-	for (auto entry : entries)
-	{
-		if (path == entry.first)
-		{
+	for (auto entry : entries) {
+		if (path == entry.first) {
 			return (lastModify > entry.second) ? 1 : 0;
 		}
 	}
@@ -199,8 +175,7 @@ int check(string path, string tablepath)
 /**
  *
  */
-void clear(string tablepath)
-{
+void clear(string tablepath) {
 	map<string, long> entries;
 	read_change_table(tablepath, entries);
 	entries.clear();
@@ -210,17 +185,15 @@ void clear(string tablepath)
 /**
  *
  */
-void title()
-{
+void title() {
 	printf("CHANGES, a file change monitoring tool\n"
-		   "\n");
+			"\n");
 }
 
 /**
  *
  */
-int help(char *self)
-{
+int help(char* self) {
 	title();
 
 	printf("This program can be used to check if a file has changed. The following commands are available:\n");
@@ -260,8 +233,7 @@ int help(char *self)
 /**
  *
  */
-int version()
-{
+int version() {
 	title();
 	printf("version 0.1\n");
 	return 0;
@@ -270,8 +242,7 @@ int version()
 /**
  *
  */
-int usage_message(char *self)
-{
+int usage_message(char* self) {
 	std::stringstream f;
 	f << "[";
 	f << FLAG_CHECK << ",";
@@ -285,8 +256,7 @@ int usage_message(char *self)
 /**
  *
  */
-int unknown_flag(char *self, string flag)
-{
+int unknown_flag(char* self, string flag) {
 	fprintf(stderr, "error: unknown flag '%s'\n", flag.c_str());
 	return usage_message(self);
 }
@@ -294,9 +264,8 @@ int unknown_flag(char *self, string flag)
 /**
  *
  */
-string get_absolute_path(string path)
-{
-	char *buf = new char[PATH_MAX];
+string get_absolute_path(string path) {
+	char* buf = new char[PATH_MAX];
 
 #if WINDOWS
 	GetFullPathName(path.c_str(), PATH_MAX, buf, 0);
@@ -312,8 +281,7 @@ string get_absolute_path(string path)
 /**
  *
  */
-long get_last_modify_date(string path)
-{
+long get_last_modify_date(string path) {
 	struct stat attrib;
 	stat(path.c_str(), &attrib);
 	tm modifyTime = *gmtime(&(attrib.st_mtime));
@@ -323,23 +291,19 @@ long get_last_modify_date(string path)
 /**
  *
  */
-void read_change_table(string path, map<string, long> &target)
-{
+void read_change_table(string path, map<string, long>& target) {
 
 	ifstream in;
 	in.open(path);
 
-	if (!in.is_open())
-	{
+	if (!in.is_open()) {
 		return;
 	}
 
 	string line;
-	while (getline(in, line))
-	{
+	while (getline(in, line)) {
 		int eqpos = line.find_last_of("=");
-		if (eqpos != -1)
-		{
+		if (eqpos != -1) {
 			string filepath = line.substr(0, eqpos);
 			string timestamps = line.substr(eqpos + 1);
 
@@ -348,8 +312,7 @@ void read_change_table(string path, map<string, long> &target)
 			long timestamp;
 			s >> timestamp;
 
-			if (!filepath.empty() && !timestamps.empty())
-			{
+			if (!filepath.empty() && !timestamps.empty()) {
 				target[filepath] = timestamp;
 			}
 		}
@@ -361,19 +324,16 @@ void read_change_table(string path, map<string, long> &target)
 /**
  *
  */
-void save_change_table(string path, map<string, long> &target)
-{
+void save_change_table(string path, map<string, long>& target) {
 
 	ofstream out;
 	out.open(path);
 
-	if (!out.is_open())
-	{
+	if (!out.is_open()) {
 		return;
 	}
 
-	for (auto entry : target)
-	{
+	for (auto entry : target) {
 		out << entry.first << "=" << entry.second << "\n";
 	}
 

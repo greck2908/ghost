@@ -32,10 +32,13 @@ void threadsetuproutine() {
 	void (*userEntry)(void*) = (void(*)(void*)) (data.userEntry);
 
 	if (userEntry) {
+		// Call the entry
 		(userEntry)(data.userData);
+
+		return __g_exit_thread();
 	}
 
-	return g_exit(0);
+	return __g_exit_thread();
 }
 
 // redirect

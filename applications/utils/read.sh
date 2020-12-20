@@ -1,10 +1,5 @@
-#!/bin/bash
-ROOT="../.."
-if [ -f "$ROOT/variables.sh" ]; then
-	. "$ROOT/variables.sh"
-fi
-. "$ROOT/ghost.sh"
-
+#!/bin/sh
+. ../../ghost.sh
 
 # Define build setup
 SRC=src-read
@@ -14,4 +9,4 @@ CFLAGS="-std=c++11 -I$SRC"
 LDFLAGS=""
 
 # Include application build tasks
-. "../applications.sh"
+. ../applications.sh

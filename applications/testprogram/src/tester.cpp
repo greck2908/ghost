@@ -19,67 +19,25 @@
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "tester.hpp"
-#include <ghost.h>
-#include <assert.h>
 #include <libgen.h>
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
 
-
-int main(int argc, char** argv)
-{
-	klog("Starting test suite...");
-
-	/* Run basic tests */
-	test_result_t result;
-	result += runStdioTest();
-	result += runMessageTest();
-	result += runThreadTests();
-
-	klog("Test suite finished: %i successful, %i failed", result.successful, result.failed);
-
-	/* Perform runtime tests */
-	klog("Starting runtime tests");
-	g_spawn("/applications/runtimetest.bin", "", "", G_SECURITY_LEVEL_APPLICATION);
-	g_spawn("/applications/runtimetest-static.bin", "", "", G_SECURITY_LEVEL_APPLICATION);
-
-	/* Restart test suite */
-	g_sleep(3000);
-	klog("Test-suite is restarting itself...");
-	g_spawn("/applications/tester.bin", "-respawned", "/", G_SECURITY_LEVEL_APPLICATION);
-}
-
 /**
- * Performs a few threading-related tests.
+ *
  */
-int testLocalSetAfterJoin = 0;
+int main(int argc, char** argv) {
 
-void testThreadRoutine()
-{
-	/* Register in task directory */
-	g_task_register_id("test-routine");
-
-	/* Wait a little before finishing */
-	for(int i = 0; i < 5; i++) {
-		g_sleep(100);
+	if (argc > 1) {
+		char* dirbuf = strdup(argv[1]);
+		char* basebuf = strdup(argv[1]);
+		printf("basename: %s\n", dirname(dirbuf));
+		printf("dirname:  %s\n", basename(basebuf));
+		free(dirbuf);
+		free(basebuf);
+	} else {
+		fprintf(stderr, "specify a path name");
 	}
-	testLocalSetAfterJoin = 25;
-}
 
-test_result_t runThreadTests()
-{
-	g_tid tid = g_create_thread((void*) testThreadRoutine);
-
-	/* Check if task directory registration has worked */
-	g_sleep(100);
-	g_tid registeredTid = g_task_get_id("test-routine");
-	assert(tid == registeredTid);
-
-	/* Test joining */
-	assert(testLocalSetAfterJoin == 0);
-	g_join(tid);
-	assert(testLocalSetAfterJoin == 25);
-
-	TEST_SUCCESSFUL;
 }

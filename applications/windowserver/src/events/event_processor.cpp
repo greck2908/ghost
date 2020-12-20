@@ -38,9 +38,6 @@
 #include <events/key_event.hpp>
 #include <events/focus_event.hpp>
 
-// TODO remove
-#include <typeinfo>
-
 /**
  *
  */

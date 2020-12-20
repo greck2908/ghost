@@ -73,7 +73,8 @@ int main() {
 	}
 
 	// set up keyboard pipe
-	g_fs_pipe_status stat = g_pipe_b(&keyboard_pipe_w, &keyboard_pipe_r, false);
+	g_fs_pipe_status stat;
+	g_pipe_bs(&keyboard_pipe_w, &keyboard_pipe_r, false, &stat);
 	if (stat != G_FS_PIPE_SUCCESSFUL) {
 		klog("failed to create keyboard pipe (status: %i)", stat);
 		return 1;

@@ -34,8 +34,6 @@
 #include <layout/flow_layout_manager.hpp>
 #include <layout/grid_layout_manager.hpp>
 
-#include <typeinfo>
-
 /**
  *
  */
@@ -49,14 +47,9 @@ component_t::~component_t() {
  *
  */
 void component_t::setBounds(const g_rectangle& newBounds) {
-
-	// Remember old bounds
 	g_rectangle oldBounds = bounds;
 
-	// Mark area of old bounds as dirty
 	markDirty();
-
-	// Write new bounds value
 	bounds = newBounds;
 	if (bounds.width < minimumSize.width) {
 		bounds.width = minimumSize.width;
@@ -64,11 +57,8 @@ void component_t::setBounds(const g_rectangle& newBounds) {
 	if (bounds.height < minimumSize.height) {
 		bounds.height = minimumSize.height;
 	}
-
-	// Mark area of new bounds as dirty
 	markDirty();
 
-	// If either width or height have changed, resize buffer
 	if (oldBounds.width != bounds.width || oldBounds.height != bounds.height) {
 		graphics.resize(bounds.width, bounds.height);
 		markFor(COMPONENT_REQUIREMENT_LAYOUT);
@@ -78,7 +68,6 @@ void component_t::setBounds(const g_rectangle& newBounds) {
 		handleBoundChange(oldBounds);
 	}
 
-	// Fire change event
 	fireBoundsChange(bounds);
 }
 
@@ -139,48 +128,31 @@ void component_t::blit(g_graphics* out, g_rectangle absClip, g_point position) {
 		int newRight = absClip.getRight() < ownAbsBounds.getRight() ? absClip.getRight() : ownAbsBounds.getRight();
 
 		g_rectangle thisClip = g_rectangle(newLeft, newTop, newRight - newLeft, newBottom - newTop);
-		children_lock.lock();
-
-		for (auto& c : children) {
-			if (c.component->visible) {
-				c.component->blit(out, thisClip, g_point(position.x + c.component->bounds.x, position.y + c.component->bounds.y));
+		for (component_t* c : children) {
+			if (c->visible) {
+				c->blit(out, thisClip, g_point(position.x + c->bounds.x, position.y + c->bounds.y));
 			}
 		}
-
-		children_lock.unlock();
 	}
 }
 
 /**
  *
  */
-void component_t::addChild(component_t* comp, component_child_reference_type_t type) {
+void component_t::addChild(component_t* comp) {
 
-	// Remove component from its previous parent
 	if (comp->parent) {
 		comp->parent->removeChild(comp);
 	}
 
-	children_lock.lock();
+	children.push_back(comp);
 
-	// Create a reference
-	component_child_reference_t reference;
-	reference.component = comp;
-	reference.type = type;
-	children.push_back(reference);
-
-	// Order components by Z index
-	std::sort(children.begin(), children.end(), [](component_child_reference_t& c1, component_child_reference_t& c2) {
-		return c1.component->z_index < c2.component->z_index;
+	std::sort(children.begin(), children.end(), [](component_t*& struct1, component_t*& struct2) {
+		return struct1->z_index < struct2->z_index;
 	});
 
-	// Assign new parent
 	comp->parent = this;
-
-	// Require layouting of self
 	markFor(COMPONENT_REQUIREMENT_LAYOUT);
-
-	children_lock.unlock();
 }
 
 /**
@@ -188,23 +160,8 @@ void component_t::addChild(component_t* comp, component_child_reference_type_t t
  */
 void component_t::removeChild(component_t* comp) {
 
-	children_lock.lock();
-
-	// Find and remove entry
-	for (auto itr = children.begin(); itr != children.end();) {
-		if ((*itr).component == comp) {
-			itr = children.erase(itr);
-		} else {
-			++itr;
-		}
-	}
-
-	// Unassign parent
+	children.erase(std::remove(children.begin(), children.end(), comp), children.end());
 	comp->parent = 0;
-
-	children_lock.unlock();
-
-	// Require layouting of self
 	markFor(COMPONENT_REQUIREMENT_LAYOUT);
 }
 
@@ -213,17 +170,14 @@ void component_t::removeChild(component_t* comp) {
  */
 component_t* component_t::getComponentAt(g_point p) {
 
-	children_lock.lock();
-	for (auto it = children.rbegin(); it != children.rend(); ++it) {
-		auto child = (*it).component;
+	for (int i = children.size() - 1; i >= 0; i--) {
+		component_t* child = children[i];
 
-		if (child->isVisible() && child->bounds.contains(p)) {
-			children_lock.unlock();
+		if (child->bounds.contains(p)) {
 			return child->getComponentAt(g_point(p.x - child->bounds.x, p.y - child->bounds.y));
 		}
 	}
 
-	children_lock.unlock();
 	return this;
 }
 
@@ -231,9 +185,9 @@ component_t* component_t::getComponentAt(g_point p) {
  *
  */
 window_t* component_t::getWindow() {
-
-	if (isWindow()) {
-		return (window_t*) this;
+	window_t* thisAsWindow = dynamic_cast<window_t*>(this);
+	if (thisAsWindow != 0) {
+		return thisAsWindow;
 	}
 
 	if (parent) {
@@ -247,32 +201,21 @@ window_t* component_t::getWindow() {
  *
  */
 void component_t::bringChildToFront(component_t* comp) {
-
-	children_lock.lock();
 	for (uint32_t index = 0; index < children.size(); index++) {
-
-		// Find component in children
-		if (children[index].component == comp) {
-
-			// Move reference to bottom
-			auto ref = children[index];
+		if (children[index] == comp) {
 			children.erase(children.begin() + index);
-			children.push_back(ref);
-
-			// Mark as dirty
+			children.push_back(comp);
 			markDirty(comp->bounds);
-
 			break;
 		}
 	}
-	children_lock.unlock();
 }
 
 /**
  *
  */
 void component_t::bringToFront() {
-
+	component_t* parent = getParent();
 	if (parent) {
 		parent->bringChildToFront(this);
 	}
@@ -300,9 +243,8 @@ bool component_t::handle(event_t& event) {
 
 	locatable_t* locatable = dynamic_cast<locatable_t*>(&event);
 
-	children_lock.lock();
-	for (auto it = children.rbegin(); it != children.rend(); ++it) {
-		auto child = (*it).component;
+	for (int i = children.size() - 1; i >= 0; i--) {
+		component_t* child = children[i];
 
 		if (child->visible) {
 			if (locatable) {
@@ -311,7 +253,6 @@ bool component_t::handle(event_t& event) {
 					locatable->position.y -= child->bounds.y;
 
 					if (child->handle(event)) {
-						children_lock.unlock();
 						return true;
 					}
 
@@ -320,7 +261,6 @@ bool component_t::handle(event_t& event) {
 				}
 
 			} else if (child->handle(event)) {
-				children_lock.unlock();
 				return true;
 			}
 		}
@@ -354,7 +294,6 @@ bool component_t::handle(event_t& event) {
 		}
 	}
 
-	children_lock.unlock();
 	return false;
 }
 
@@ -448,14 +387,12 @@ void component_t::markChildsFor(component_requirement_t req) {
 void component_t::resolveRequirement(component_requirement_t req) {
 
 	if (childRequirements & req) {
-		children_lock.lock();
-		for (auto& child : children) {
-			if (child.component->visible) {
-				child.component->resolveRequirement(req);
+		for (component_t* child : children) {
+			if (child->visible) {
+				child->resolveRequirement(req);
 			}
 		}
 		childRequirements &= ~COMPONENT_REQUIREMENT_NONE;
-		children_lock.unlock();
 	}
 
 	if (requirements & req) {
@@ -496,19 +433,10 @@ void component_t::resolveRequirement(component_requirement_t req) {
  *
  */
 void component_t::setListener(g_ui_component_event_type eventType, g_tid target_thread, g_ui_component_id id) {
-	component_listener_entry_t* entry = new component_listener_entry_t();
-	entry->info.target_thread = target_thread;
-	entry->info.component_id = id;
-	entry->previous = 0;
-	entry->type = eventType;
-
-	if (listeners) {
-		entry->next = listeners;
-		listeners->previous = entry;
-	} else {
-		entry->next = 0;
-	}
-	listeners = entry;
+	event_listener_info_t info;
+	info.target_thread = target_thread;
+	info.component_id = id;
+	listeners[eventType] = info;
 }
 
 /**
@@ -516,13 +444,9 @@ void component_t::setListener(g_ui_component_event_type eventType, g_tid target_
  */
 bool component_t::getListener(g_ui_component_event_type eventType, event_listener_info_t& out) {
 
-	component_listener_entry_t* entry = listeners;
-	while (entry) {
-		if (entry->type == eventType) {
-			out = entry->info;
-			return true;
-		}
-		entry = entry->next;
+	if (listeners.count(eventType)) {
+		out = listeners[eventType];
+		return true;
 	}
 	return false;
 }
@@ -579,22 +503,5 @@ bool component_t::setNumericProperty(int property, uint32_t value) {
 		}
 	}
 
-	return false;
-}
-
-/**
- *
- */
-bool component_t::getChildReference(component_t* child, component_child_reference_t& out) {
-
-	children_lock.lock();
-	for (auto& ref : children) {
-		if (ref.component == child) {
-			out = ref;
-			children_lock.unlock();
-			return true;
-		}
-	}
-	children_lock.unlock();
 	return false;
 }

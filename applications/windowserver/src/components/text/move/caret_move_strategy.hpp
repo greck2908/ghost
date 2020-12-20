@@ -22,7 +22,7 @@
 #define __CARET_MOVE_STRATEGY__
 
 #include <components/text/caret_direction.hpp>
-#include <ghostuser/io/keyboard.hpp>
+#include <ghostuser/io/Keyboard.hpp>
 
 class text_component_t;
 
