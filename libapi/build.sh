@@ -1,5 +1,10 @@
-#!/bin/sh
-. ../ghost.sh
+#!/bin/bash
+ROOT=".."
+if [ -f "$ROOT/variables.sh" ]; then
+	. "$ROOT/variables.sh"
+fi
+. "$ROOT/ghost.sh"
+
 
 TARGET=$1
 
@@ -7,13 +12,17 @@ with TARGET					"all"
 with SRC					"src"
 with OBJ					"obj"
 with INC					"inc"
-with INC_KERNEL				"../kernel/inc"
+with INC_SYSTEM_HEADERS		"../kernel/inc/ghost"
 
 with ARTIFACT_NAME			"libghostapi.a"
-ARTIFACT_LOCAL="$ARTIFACT_NAME"
-ARTIFACT_TARGET="$SYSROOT_SYSTEM_LIB/$ARTIFACT_NAME"
+with ARTIFACT_LOCAL			"$ARTIFACT_NAME"
+with ARTIFACT_TARGET		"$SYSROOT_SYSTEM_LIB/$ARTIFACT_NAME"
+with ARTIFACT_NAME_SHARED	"libghostapi.so"
+with ARTIFACT_LOCAL_SHARED	"$ARTIFACT_NAME_SHARED"
+with ARTIFACT_TARGET_SHARED	"$SYSROOT_SYSTEM_LIB/$ARTIFACT_NAME_SHARED"
 
-with CFLAGS					"-std=c++11 -I$INC -I$INC_KERNEL"
+with CFLAGS					"-std=c++11 -fpic -I$INC -I$INC_SYSTEM_HEADERS"
+with LDFLAGS				"-shared -shared-libgcc"
 
 
 echo "target: $TARGET"
@@ -26,6 +35,7 @@ mkdir -p $OBJ
 target_clean() {
 	echo "cleaning:"
 	rm $ARTIFACT_LOCAL
+	rm $ARTIFACT_LOCAL_SHARED
 	cleanDirectory $OBJ
 	changes --clear
 }
@@ -60,34 +70,31 @@ target_compile() {
 target_archive() {
 	echo "archiving:"
 	$CROSS_AR -r $ARTIFACT_LOCAL $OBJ/*.o
+	$CROSS_CC $LDFLAGS -o $ARTIFACT_LOCAL_SHARED $OBJ/*.o
 }
 	
 target_clean_target() {
-	
 	echo "removing $ARTIFACT_TARGET"
 	rm $ARTIFACT_TARGET 2&> /dev/null
+	echo "removing $ARTIFACT_TARGET_SHARED"
+	rm $ARTIFACT_TARGET_SHARED 2&> /dev/null
 }
 
 target_install_headers() {
-
 	echo "installing api headers"
 	cp -r $INC/* $SYSROOT_SYSTEM_INCLUDE/
 
 	echo "installing kernel headers"
-	cp -r $INC_KERNEL/* $SYSROOT_SYSTEM_INCLUDE/
-	
+	cp -r $INC_SYSTEM_HEADERS $SYSROOT_SYSTEM_INCLUDE
 }
 
 target_install() {
-	
 	target_clean_target
 	target_install_headers
 	
-	echo "installing artifact"
+	echo "installing artifacts"
 	cp $ARTIFACT_LOCAL $ARTIFACT_TARGET
-	
-	# c'mon
-	chmod -R 777 $SYSROOT
+	cp $ARTIFACT_LOCAL_SHARED $ARTIFACT_TARGET_SHARED
 }
 
 

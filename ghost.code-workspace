@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"cstdlib": "cpp",
+			"fstream": "cpp",
+			"type_traits": "cpp",
+			"string": "cpp",
+			"iostream": "cpp",
+			"errno.h": "c"
+		}
+	}
+}

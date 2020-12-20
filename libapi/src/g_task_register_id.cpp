@@ -24,7 +24,7 @@
  *
  */
 uint8_t g_task_register_id(const char* newIdentifier) {
-	g_task_id_register data;
+	g_syscall_task_id_register data;
 	data.identifier = (char*) newIdentifier;
 	g_syscall(G_SYSCALL_REGISTER_TASK_IDENTIFIER, (uint32_t) &data);
 	return data.successful;

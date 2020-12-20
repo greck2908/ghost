@@ -23,6 +23,7 @@
 
 #include "ghost/stdint.h"
 #include "ghost/kernel.h"
+#include "ghost/types.h"
 
 /**
  * @field size
@@ -79,7 +80,7 @@ typedef struct {
  * @security-level DRIVER
  */
 typedef struct {
-	void* physicalAddress;
+	g_physical_address physicalAddress;
 	uint32_t size;
 
 	void* virtualAddress;

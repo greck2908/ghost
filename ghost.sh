@@ -2,6 +2,10 @@
 # Ghost common build functionality
 
 
+# Include user variables if available
+if [ -f variables.sh ]; then
+	. variables.sh
+fi
 
 #
 # Overrides a variable if it is not set
@@ -69,7 +73,7 @@ remove() {
 #
 failOnError() {
 	if [[ $? != 0 ]]; then
-		echo "Build failed"
+		printf "\e[31;1mtarget failed\e[0m\n\n"	
 		exit 1
 	fi	
 }
@@ -92,22 +96,42 @@ headline() {
 }
 
 target_headline() {
-	printf "TARGET: \e[0;7m$1\e[0m\n\n"	
+	printf "\e[0;7mTARGET:\e[0m $1\n"
 }
 
+target_successful() {
+	printf "\e[0;1mtarget successful\e[0m\n\n"	
+}
+
+#
+# Utils
+#
+pushd () {
+    command pushd "$@" > /dev/null
+}
+
+popd () {
+    command popd "$@" > /dev/null
+}
 
 # Global variables
-with CROSS_PREFIX		"i686-ghost-"
-with CROSS_CC			$CROSS_PREFIX"gcc"
-with CROSS_CXX			$CROSS_PREFIX"g++"
-with CROSS_LD			$CROSS_PREFIX"ld"
-with CROSS_GAS			$CROSS_PREFIX"as"
-with CROSS_AR			$CROSS_PREFIX"ar"
-with NASM				"nasm"
-with TOOLCHAIN_BASE		"/ghost"
+with CROSS_HOST			"i686-ghost"
+with CROSS_CC			$CROSS_HOST"-gcc"
+with CROSS_CXX			$CROSS_HOST"-g++"
+with CROSS_LD			$CROSS_HOST"-ld"
+with CROSS_GAS			$CROSS_HOST"-as"
+with CROSS_AR			$CROSS_HOST"-ar"
 
+with TOOLCHAIN_BASE		"/ghost"
 with SYSROOT			$TOOLCHAIN_BASE"/sysroot"
+
+with NASM				nasm
+with SH					bash
+
+
 SYSROOT_APPLICATIONS=$SYSROOT/applications
 SYSROOT_SYSTEM=$SYSROOT/system
 SYSROOT_SYSTEM_INCLUDE=$SYSROOT_SYSTEM/include
 SYSROOT_SYSTEM_LIB=$SYSROOT_SYSTEM/lib
+
+export PATH=$PATH:$TOOLCHAIN_BASE/bin

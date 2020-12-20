@@ -23,12 +23,12 @@
 
 #include <stdarg.h>
 #include <stddef.h>
+#include "ghost/types.h"
 #include "ghost/common.h"
 #include "ghost/kernel.h"
 #include "ghost/system.h"
 #include "ghost/ramdisk.h"
 #include "ghost/ipc.h"
-#include "ghost/types.h"
 #include "ghost/fs.h"
 #include "ghost/calls/calls.h"
 
@@ -83,21 +83,14 @@ g_bool g_atomic_block_dual_to(g_atom* a1, g_atom* a2, uint64_t timeout);
 /**
  * Spawns a program binary.
  *
- * @param path
- * 		absolute path of the executable
- * @param args
- * 		unparsed arguments
- * @param workdir
- * 		working directory for the execution
- * @param securityLevel
- * 		security level to spawn the process to
- * @param outProcessId
- * 		is filled with the process id
- * @param out_stdio
- * 		is filled with stdio file descriptors, 0 is write end of stdin,
+ * @param path absolute path of the executable
+ * @param args unparsed arguments
+ * @param workdir working directory for the execution
+ * @param securityLevel security level to spawn the process to
+ * @param outProcessId is filled with the process id
+ * @param outStdio is filled with stdio file descriptors, 0 is write end of stdin,
  * 		1 is read end of stdout, 2 is read end of stderr
- * @param in_stdio
- * 		if supplied, the given descriptors which are valid for the executing process
+ * @param inStdio if supplied, the given descriptors which are valid for the executing process
  * 		are used as the stdin/out/err for the spawned process; an entry might be -1
  * 		to be ignored and default behaviour being applied
  *
@@ -107,9 +100,9 @@ g_bool g_atomic_block_dual_to(g_atom* a1, g_atom* a2, uint64_t timeout);
  */
 g_spawn_status g_spawn(const char* path, const char* args, const char* workdir, g_security_level securityLevel);
 g_spawn_status g_spawn_p(const char* path, const char* args, const char* workdir, g_security_level securityLevel, g_pid* pid);
-g_spawn_status g_spawn_po(const char* path, const char* args, const char* workdir, g_security_level securityLevel, g_pid* pid, g_fd out_stdio[3]);
-g_spawn_status g_spawn_poi(const char* path, const char* args, const char* workdir, g_security_level securityLevel, g_pid* pid, g_fd out_stdio[3],
-		g_fd in_stdio[3]);
+g_spawn_status g_spawn_po(const char* path, const char* args, const char* workdir, g_security_level securityLevel, g_pid* pid, g_fd outStdio[3]);
+g_spawn_status g_spawn_poi(const char* path, const char* args, const char* workdir, g_security_level securityLevel, g_pid* pid, g_fd outStdio[3], g_fd inStdio[3]);
+g_spawn_status g_spawn_poid(const char* path, const char* args, const char* workdir, g_security_level securityLevel, g_pid* pid, g_fd outStdio[3], g_fd inStdio[3], g_spawn_validation_details* outValidationDetails);
 
 /**
  * Kills a process.
@@ -165,9 +158,8 @@ void g_syscall(uint32_t call, uint32_t data);
  * @security-level APPLICATION
  */
 g_fd g_open(const char* path);
-g_fd g_open_f(const char* path, int32_t flags);
-g_fd g_open_fs(const char* path, int32_t flags, g_fs_open_status* out_status);
-g_fd g_open_fms(const char* path, int32_t flags, int32_t mode, g_fs_open_status* out_status);
+g_fd g_open_f(const char* path, g_file_flag_mode flags);
+g_fd g_open_fs(const char* path, g_file_flag_mode flags, g_fs_open_status* out_status);
 
 /**
  * Closes a file.
@@ -290,16 +282,12 @@ int64_t g_tell_s(g_fd fd, g_fs_tell_status* out_status);
  * @param path
  * 		buffer of at least {G_PATH_MAX} bytes size
  * 		containing the new working directory
- *
- * @param process
- * 		process to set working directory for during spawning
- *
+ * 
  * @return one of the {g_set_working_directory_status} codes
  *
  * @security-level APPLICATION if no process given, otherwise KERNEL
  */
 g_set_working_directory_status g_set_working_directory(const char* path);
-g_set_working_directory_status g_set_working_directory_p(const char* path, g_process_creation_identifier process);
 
 /**
  * Retrieves the working directory for the current process.
@@ -316,6 +304,18 @@ g_set_working_directory_status g_set_working_directory_p(const char* path, g_pro
  */
 g_get_working_directory_status g_get_working_directory(char* buffer);
 g_get_working_directory_status g_get_working_directory_l(char* buffer, size_t maxlen);
+
+/**
+ * Sets the working directory for the current process.
+ * 
+ * @param path
+ * 		buffer of at least <maxlen> or {G_PATH_MAX} bytes size
+ *
+ * @return whether the action was successful
+ *
+ * @security-level APPLICATION
+ */
+g_set_working_directory_status g_set_working_directory(const char* path);
 
 /**
  * Retrieves the directory of the executable when available, otherwise an empty
@@ -590,16 +590,6 @@ uint8_t g_task_register_id(const char* identifier);
 g_tid g_task_get_id(const char* identifier);
 
 /**
- * The executing thread waits for the interrupt request with the given number.
- *
- * @param irq
- * 		the irq number
- *
- * @security-level DRIVER
- */
-void g_wait_for_irq(uint8_t irq);
-
-/**
  * Maps the given physical address to the executing processes address space so
  * it can access it directly.
  *
@@ -685,98 +675,6 @@ void* g_lower_malloc(uint32_t size);
 void g_set_video_log(uint8_t enabled);
 
 /**
- * Spawns a binary from the ramdisk.
- *
- * @param path
- * 		ramdisk-relative path to the binary
- * @param securityLevel
- * 		the security level to set for the spawned process
- *
- * @param security-level KERNEL
- */
-g_ramdisk_spawn_status g_ramdisk_spawn(const char* path, g_security_level securityLevel);
-
-/**
- * Finds a ramdisk entry by its absolute path.
- *
- * @param path
- * 		absolute path
- *
- * @return if found the ramdisk node id, otherwise -1
- *
- * @security-level APPLICATION
- */
-int g_ramdisk_find(const char* path);
-
-/**
- * Finds a ramdisk entry's child by its relative path.
- *
- * @param path
- * 		relative path
- *
- * @return if found the ramdisk node id, otherwise -1
- *
- * @security-level APPLICATION
- */
-int g_ramdisk_find_child(int nodeId, const char* childName);
-
-/**
- * Retrieves ramdisk entry info for a specific node.
- *
- * @param nodeId
- * 		ramdisk node id
- * @param out
- * 		is filled with the info
- *
- * @security-level APPLICATION
- */
-void g_ramdisk_info(int nodeId, g_ramdisk_entry_info* out);
-
-/**
- * Reads bytes from a file on the ramdisk.
- *
- * @param nodeID
- * 		ramdisk node id
- * @param offset
- * 		offset within the file
- * @param buffer
- * 		target buffer
- * @param length
- * 		number of bytes to read
- *
- * @return if successful the number of bytes read, otherwise -1
- *
- * @security-level APPLICATION
- */
-int g_ramdisk_read(int nodeId, uint32_t offset, char* buffer, uint32_t length);
-
-/**
- * Returns the number of children of a ramdisk entry.
- *
- * @param nodeId
- * 		ramdisk node id
- *
- * @return the number of children
- *
- * @security-level APPLICATION
- */
-int g_ramdisk_child_count(int nodeId);
-
-/**
- * Returns the id of a child of the given node at the given index.
- *
- * @param nodeId
- * 		ramdisk node id
- * @param index
- * 		child index
- *
- * @return if the child exists the child node id, otherwise -1
- *
- * @security-level APPLICATION
- */
-int g_ramdisk_child_at(int nodeId, int index);
-
-/**
  * TODO: currently returns the number of milliseconds that one
  * of the schedulers is running.
  *
@@ -794,9 +692,7 @@ uint64_t g_millis();
 uint32_t g_test(uint32_t test);
 
 /**
- * Forks the current process.
- * TODO:
- * 	- only works from the main thread
+ * Forks the current process. Only works from the main thread.
  *
  * @return within the executing process the forked processes id is returned,
  * 		within the forked process 0 is returned
@@ -869,130 +765,8 @@ g_fd g_clone_fd_ts(g_fd source_fd, g_pid source_process, g_fd target_fd, g_pid t
  *
  * @security-level APPLICATION
  */
-void g_pipe(g_fd* out_write, g_fd* out_read);
-void g_pipe_s(g_fd* out_write, g_fd* out_read, g_fs_pipe_status* out_status);
-void g_pipe_b(g_fd* out_write, g_fd* out_read, g_bool blocking);
-void g_pipe_bs(g_fd* out_write, g_fd* out_read, g_bool blocking, g_fs_pipe_status* out_status);
-
-/**
- * Stores command line arguments for a created process.
- *
- * @param process
- * 		the process creation identifier
- * @param arguments
- * 		arguments to store
- *
- * @security-level KERNEL
- */
-void g_cli_args_store(g_process_creation_identifier process, char* arguments);
-
-/**
- * Returns and releases the command line arguments for the executing process.
- * This buffer must have a length of at least {PROCESS_COMMAND_LINE_ARGUMENTS_BUFFER_LENGTH} bytes.
- * If no arguments were supplied for the executing process, the buffer is null-terminated only.
- *
- * @param buffer
- * 		target buffer to store the arguments to
- *
- * @security-level KERNEL
- */
-void g_cli_args_release(char* buffer);
-
-/**
- * Creates an empty process.
- *
- * @param securityLevel
- * 		the security level to use
- *
- * @return the process creation identifier for the created process
- *
- * @security-level KERNEL
- */
-g_process_creation_identifier g_create_empty_process(g_security_level securityLevel);
-
-/**
- * Configures the created empty process during spawning.
- *
- * @param process
- * 		process creation identifier for the target process
- * @param configuration
- * 		the configuration structure
- *
- * @security-level KERNEL
- */
-void g_configure_process(g_process_creation_identifier process, g_process_configuration configuration);
-
-/**
- * Creates pages in a process during process creation and maps the created pages in the
- * executing processes address space.
- *
- * @param process
- * 		the process creation identifier
- * @param virtualAddress
- * 		the address to map to
- * @param pages
- * 		number of pages to map
- *
- * @return the virtual address of the pages mapped to the executing processes address space
- *
- * @security-level KERNEL
- */
-void* g_create_pages_in_spaces(g_process_creation_identifier process, uint32_t virtualAddress, int pages);
-
-/**
- * Creates a thread-local-storage area for a process and copies/zeroes the given amount of bytes
- * from the content.
- *
- * @param process
- * 		the process creation identifier
- * @param content
- * 		master copy content
- * @param copysize
- * 		number of bytes to copy from content
- * @param zerosize
- * 		total size (including bytes to zero)
- * @param alignment
- * 		tls alignment
- *
- * @return whether writing was successful
- *
- * @security-level KERNEL
- */
-uint8_t g_write_tls_master_for_process(g_process_creation_identifier process, uint8_t* content, uint32_t copysize, uint32_t totalsize, uint32_t alignment);
-
-/**
- * Attaches and therefore starts a process during process creation at the given execution point.
- *
- * @param process
- * 		the process creation identifier
- * @param eip
- * 		execution entry point
- *
- * @security-level KERNEL
- */
-void g_attach_created_process(g_process_creation_identifier process, g_address eip);
-
-/**
- * Cancels process creation.
- *
- * @param process
- * 		the process creation identifier
- *
- * @security-level KERNEL
- */
-void g_cancel_process_creation(g_process_creation_identifier process);
-
-/**
- * Retrieves the pid for a created process. Only usable if the process was attached.
- *
- * @param process
- * 		the process creation identifier
- *
- * @return the pid of the created process.
- *
- * @security-level KERNEL
- */
-g_pid g_get_created_process_id(g_process_creation_identifier process);
+g_fs_pipe_status g_pipe(g_fd* out_write, g_fd* out_read);
+g_fs_pipe_status g_pipe_b(g_fd* out_write, g_fd* out_read, g_bool blocking);
 
 /**
  * Creates a mountpoint and registers the current thread as its file system delegate.
@@ -1087,7 +861,7 @@ void g_restore_interrupted_state();
  *
  * @security-level DRIVER
  */
-void* g_register_signal_handler(int signal, void* handler);
+void* g_register_signal_handler(int signal, void(*handler)(int));
 
 /**
  * Raises the <signal> in the <process>.
@@ -1114,6 +888,31 @@ g_raise_signal_status g_raise_signal(g_pid process, int signal);
  * @return one of the {g_kernquery_status} codes
  */
 g_kernquery_status g_kernquery(uint16_t command, uint8_t* buffer);
+
+/**
+ * Returns and releases the command line arguments for the executing process.
+ * This buffer must have a length of at least {PROCESS_COMMAND_LINE_ARGUMENTS_BUFFER_LENGTH} bytes.
+ * If no arguments were supplied for the executing process, the buffer is null-terminated only.
+ *
+ * @param buffer
+ * 		target buffer to store the arguments to
+ *
+ * @security-level KERNEL
+ */
+void g_cli_args_release(char* buffer);
+
+/**
+ * @return a pointer to the user-thread object in the TLS of the current thread.
+ */
+void* g_task_get_tls();
+
+/**
+ * Returns a pointer to the process information structure. This structure for example
+ * contains a list of all loaded objects.
+ * 
+ * @return a pointer to a g_process_info
+ */
+g_process_info* g_process_get_info();
 
 __END_C
 

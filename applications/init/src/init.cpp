@@ -26,31 +26,39 @@
  */
 int main(int argc, char** argv) {
 
-	g_task_register_id("init");
-
-	// load spawner process
-	g_ramdisk_spawn_status spawner_stat = g_ramdisk_spawn("applications/spawner.bin", G_SECURITY_LEVEL_KERNEL);
-	if (spawner_stat != G_RAMDISK_SPAWN_STATUS_SUCCESSFUL) {
-		g_logger::log("unable to load system spawner process");
-		yield: asm("hlt");
-		goto yield;
+	int x = 0;
+	int bla = 0;
+	for (;;) {
+		klog("Hello world!");
+		g_sleep(5000);
 	}
 
-	// wait for spawner to get ready
-	g_tid spawner_id;
-	while ((spawner_id = g_task_get_id(G_SPAWNER_IDENTIFIER)) == -1) {
-		g_yield();
-	}
+	/*
+	 g_task_register_id("init");
 
-	// let the spawner load the launch service
-	g_pid ls_pid;
-	std::string launch_srv_path = "/applications/launch.bin";
+	 // load spawner process
+	 g_ramdisk_spawn_status spawner_stat = g_ramdisk_spawn("applications/spawner.bin", G_SECURITY_LEVEL_KERNEL);
+	 if (spawner_stat != G_RAMDISK_SPAWN_STATUS_SUCCESSFUL) {
+	 g_logger::log("unable to load system spawner process");
+	 yield: asm("hlt");
+	 goto yield;
+	 }
 
-	g_spawn_status stat = g_spawn_p(launch_srv_path.c_str(), "/system/launch/init", "/", G_SECURITY_LEVEL_KERNEL, &ls_pid);
-	if (stat == G_SPAWN_STATUS_SUCCESSFUL) {
-		g_logger::log("launch service executed in process %i", ls_pid);
-	} else {
-		g_logger::log("failed to load launch service from '" + launch_srv_path + "' with code %i", stat);
-	}
+	 // wait for spawner to get ready
+	 g_tid spawner_id;
+	 while ((spawner_id = g_task_get_id(G_SPAWNER_IDENTIFIER)) == -1) {
+	 g_yield();
+	 }
 
+	 // let the spawner load the launch service
+	 g_pid ls_pid;
+	 std::string launch_srv_path = "/applications/launch.bin";
+
+	 g_spawn_status stat = g_spawn_p(launch_srv_path.c_str(), "/system/launch/init", "/", G_SECURITY_LEVEL_KERNEL, &ls_pid);
+	 if (stat == G_SPAWN_STATUS_SUCCESSFUL) {
+	 g_logger::log("launch service executed in process %i", ls_pid);
+	 } else {
+	 g_logger::log("failed to load launch service from '" + launch_srv_path + "' with code %i", stat);
+	 }
+	 */
 }

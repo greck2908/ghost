@@ -37,12 +37,15 @@
 #include <layout/flow_layout_manager.hpp>
 #include <layout/grid_layout_manager.hpp>
 #include <interface/component_registry.hpp>
+#include <ghostuser/ui/properties.hpp>
 
 #include <iostream>
 #include <stdio.h>
+#include <algorithm>
 
 #include <ghostuser/tasking/lock.hpp>
 
+#include <typeinfo>
 #include <cairo/cairo.h>
 
 static windowserver_t* server;
@@ -69,6 +72,7 @@ int main(int argc, char** argv) {
  */
 void windowserver_t::launch() {
 	g_task_register_id("windowserver");
+	g_sleep(3000);
 
 	// disable video log
 	g_set_video_log(false);
@@ -112,13 +116,14 @@ void windowserver_t::launch() {
 	responder_thread->start();
 
 	// test components
-//	createTestComponents();
+	createTestComponents();
 
 // execute the main loop
 	mainLoop(screenBounds);
 }
 
 static uint64_t render_start;
+
 /**
  *
  */
@@ -192,7 +197,7 @@ void windowserver_t::mainLoop(g_rectangle screenBounds) {
 			g_sleep((1000 / 60) - render_time);
 		}
 
-		g_atomic_lock_to(&render_atom, 100);
+		g_atomic_lock_to(&render_atom, 1000);
 
 		// print output
 #if BENCHMARKING
@@ -244,30 +249,68 @@ void windowserver_t::loadCursor() {
 	cursor_t::focusedComponent = screen;
 }
 
+class open_executable_action_handler_t;
+void open_executable_spawn(open_executable_action_handler_t* data);
+
+/**
+ *
+ */
+class open_executable_action_handler_t: public internal_action_handler_t {
+public:
+	std::string exe;
+	std::string args;
+	open_executable_action_handler_t(std::string exe, std::string args) :
+			exe(exe), args(args) {
+	}
+	void handle(action_component_t* source) {
+		g_create_thread_d((void*) &open_executable_spawn, this);
+	}
+};
+
+void open_executable_spawn(open_executable_action_handler_t* data)
+{
+	g_spawn(data->exe.c_str(), data->args.c_str(), "/", G_SECURITY_LEVEL_APPLICATION);
+}
+
+/**
+ *
+ */
+void addExecutableButton(window_t* window, std::string name, std::string exe, std::string args) {
+
+	static int nextExeButtonPos = 70;
+	button_t* openCalculatorButton = new button_t();
+	openCalculatorButton->setBounds(g_rectangle(10, nextExeButtonPos, 270, 30));
+	openCalculatorButton->getLabel().setTitle(name);
+	openCalculatorButton->setInternalActionHandler(new open_executable_action_handler_t(exe, args));
+	window->addChild(openCalculatorButton);
+	nextExeButtonPos += 35;
+}
+
 /**
  *
  */
 void windowserver_t::createTestComponents() {
 
 	window_t* testWindow = new window_t;
-	testWindow->setTitle("Ghost Launchpad");
-	testWindow->setBounds(g_rectangle(10, 10, 300, 250));
-
-	grid_layout_manager_t* layout = new grid_layout_manager_t(1, 0);
-	layout->setPadding(g_insets(10, 10, 10, 10));
-	testWindow->getPanel()->setLayoutManager(layout);
+	testWindow->setTitle("Welcome to Ghost!");
+	testWindow->setBounds(g_rectangle(10, 10, 320, 230));
+	testWindow->setNumericProperty(G_UI_PROPERTY_RESIZABLE, false);
 
 	label_t* infoLabel = new label_t();
-	infoLabel->setTitle("Hello user!");
+	infoLabel->setBounds(g_rectangle(10, 10, 300, 20));
+	infoLabel->setTitle("This is a demo launchpad for executing");
+	infoLabel->setColor(RGB(0, 0, 0));
 	testWindow->addChild(infoLabel);
 
 	label_t* infoLabel2 = new label_t();
-	infoLabel2->setTitle("This is a demo launchpad that let's you execute available GUI applications.");
+	infoLabel2->setBounds(g_rectangle(10, 30, 300, 20));
+	infoLabel2->setTitle("the available GUI applications.");
+	infoLabel2->setColor(RGB(0, 0, 0));
 	testWindow->addChild(infoLabel2);
 
-	button_t* openCalculatorButton = new button_t();
-	openCalculatorButton->getLabel().setTitle("Open calculator");
-	testWindow->addChild(openCalculatorButton);
+	addExecutableButton(testWindow, "Calculator", "/applications/calculator.bin", "");
+	addExecutableButton(testWindow, "Terminal", "/applications/terminal2.bin", "");
+	addExecutableButton(testWindow, "Drawing demo", "/applications/tetris.bin", "");
 
 	/*
 	 scrollpane_t* scroller = new scrollpane_t;
@@ -371,33 +414,4 @@ void windowserver_t::triggerRender() {
 	render_atom = false;
 }
 
-/**
- *
- */
-void windowserver_t::cleanup(g_pid process) {
-
-	// get components mapped for process
-	auto components = component_registry_t::get_process_map(process);
-
-	// TODO
-	klog("removing components for process %i", process);
-	if (components) {
-		for (auto& entry : *components) {
-			component_t* component = entry.second;
-			if (component) {
-				//	component_registry_t::remove_component(process, entry.first);
-				component->setVisible(false);
-
-				//	auto parent = component->getParent();
-				//	if (parent) {
-				//		parent->removeChild(component);
-				//	}
-
-				//	delete component;
-			}
-		}
-
-		// component_registry_t::remove_process_map(process);
-	}
-}
 

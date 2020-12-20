@@ -29,15 +29,13 @@
 __BEGIN_C
 
 /**
- * Type of a process creation identifier
- */
-typedef void* g_process_creation_identifier;
-
-/**
  * Thread & process ids
  */
 typedef int32_t g_tid;
 typedef g_tid g_pid;
+
+#define G_TID_NONE		((g_tid) -1)
+#define G_PID_NONE		((g_pid) -1)
 
 /**
  * Task execution security levels
@@ -79,17 +77,18 @@ typedef struct {
  */
 typedef uint8_t g_thread_type;
 
-static const g_thread_type G_THREAD_TYPE_MAIN = 0;
-static const g_thread_type G_THREAD_TYPE_SUB = 1;
-static const g_thread_type G_THREAD_TYPE_VM86 = 2;
+#define G_THREAD_TYPE_DEFAULT ((g_thread_type) 0)
+#define G_THREAD_TYPE_VM86 ((g_thread_type) 1)
+#define G_THREAD_TYPE_SYSCALL ((g_thread_type) 2)
+#define G_THREAD_TYPE_VITAL ((g_thread_type) 3)
 
 /**
  * Task priority
  */
 typedef uint8_t g_thread_priority;
 
-static const g_thread_priority G_THREAD_PRIORITY_NORMAL = 0;
-static const g_thread_priority G_THREAD_PRIORITY_IDLE = 1;
+#define G_THREAD_PRIORITY_NORMAL ((g_thread_priority) 0)
+#define G_THREAD_PRIORITY_IDLE ((g_thread_priority) 1)
 
 /**
  * Task setup constants
@@ -97,9 +96,44 @@ static const g_thread_priority G_THREAD_PRIORITY_IDLE = 1;
 #define G_THREAD_USER_STACK_RESERVED_VIRTUAL_PAGES		16
 
 /**
+ * Task states
+ */
+typedef uint8_t g_thread_status;
+
+#define G_THREAD_STATUS_DEAD ((g_thread_status) 0)
+#define G_THREAD_STATUS_RUNNING ((g_thread_status) 1)
+#define G_THREAD_STATUS_WAITING ((g_thread_status) 2)
+#define G_THREAD_STATUS_UNUSED ((g_thread_status) 3)
+
+/**
  * Pipes
  */
 #define G_PIPE_DEFAULT_CAPACITY		0x400
+
+/**
+ * Process information section header
+ */
+typedef struct _g_object_info {
+	const char* name;
+
+	void (*init)(void);
+	void (*fini)(void);
+	void (**preinitArray)(void);
+	uint32_t preinitArraySize;
+	void (**initArray)(void);
+	uint32_t initArraySize;
+	void (**finiArray)(void);
+	uint32_t finiArraySize;
+}__attribute__((packed)) g_object_info;
+
+/**
+ * The object information structure is used within the process information section
+ * to provide details about all loaded objects in a process.
+ */
+typedef struct {
+	g_object_info* objectInfos;
+	uint32_t objectInfosSize;
+}__attribute__((packed)) g_process_info;
 
 __END_C
 

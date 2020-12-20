@@ -38,12 +38,24 @@ __BEGIN_C
 #define G_SPAWN_COMMAND_SPAWN_RESPONSE	2
 
 // status codes for spawning
-typedef int g_spawn_status;
-#define G_SPAWN_STATUS_SUCCESSFUL 		((g_spawn_status) 0)
-#define G_SPAWN_STATUS_IO_ERROR			((g_spawn_status) 1)
-#define G_SPAWN_STATUS_MEMORY_ERROR		((g_spawn_status) 2)
-#define G_SPAWN_STATUS_FORMAT_ERROR		((g_spawn_status) 3)
-#define G_SPAWN_STATUS_UNKNOWN			((g_spawn_status) 4)
+typedef uint8_t g_spawn_status;
+#define G_SPAWN_STATUS_SUCCESSFUL 						((g_spawn_status) 0)
+#define G_SPAWN_STATUS_IO_ERROR							((g_spawn_status) 1)
+#define G_SPAWN_STATUS_MEMORY_ERROR						((g_spawn_status) 2)
+#define G_SPAWN_STATUS_FORMAT_ERROR						((g_spawn_status) 3)
+#define G_SPAWN_STATUS_TASKING_ERROR					((g_spawn_status) 4)
+#define G_SPAWN_STATUS_DEPENDENCY_ERROR					((g_spawn_status) 5)
+#define G_SPAWN_STATUS_DEPENDENCY_DUPLICATE				((g_spawn_status) 6)
+
+typedef uint8_t g_spawn_validation_details;
+#define G_SPAWN_VALIDATION_SUCCESSFUL				((g_spawn_validation_details) 0)
+#define G_SPAWN_VALIDATION_ELF32_NOT_ELF			((g_spawn_validation_details) 1)
+#define G_SPAWN_VALIDATION_ELF32_NOT_EXECUTABLE		((g_spawn_validation_details) 2)
+#define G_SPAWN_VALIDATION_ELF32_NOT_I386			((g_spawn_validation_details) 3)
+#define G_SPAWN_VALIDATION_ELF32_NOT_32BIT			((g_spawn_validation_details) 4)
+#define G_SPAWN_VALIDATION_ELF32_NOT_LITTLE_ENDIAN	((g_spawn_validation_details) 5)
+#define G_SPAWN_VALIDATION_ELF32_NOT_STANDARD_ELF	((g_spawn_validation_details) 6)
+#define G_SPAWN_VALIDATION_ELF32_IO_ERROR			((g_spawn_validation_details) 7)
 
 // command structs
 typedef struct {
@@ -78,6 +90,7 @@ typedef struct {
 typedef uint8_t g_register_irq_handler_status;
 #define G_REGISTER_IRQ_HANDLER_STATUS_SUCCESSFUL		((g_register_irq_handler_status) 0)
 #define G_REGISTER_IRQ_HANDLER_STATUS_NOT_PERMITTED		((g_register_irq_handler_status) 1)
+#define G_REGISTER_IRQ_HANDLER_STATUS_INVALID_IRQ		((g_register_irq_handler_status) 2)
 
 // for <g_register_signal_handler>
 typedef uint8_t g_register_signal_handler_status;
@@ -89,6 +102,7 @@ typedef uint8_t g_raise_signal_status;
 #define G_RAISE_SIGNAL_STATUS_SUCCESSFUL				((g_raise_signal_status) 0)
 #define G_RAISE_SIGNAL_STATUS_INVALID_SIGNAL 			((g_raise_signal_status) 1)
 #define G_RAISE_SIGNAL_STATUS_INVALID_TARGET 			((g_raise_signal_status) 2)
+#define G_RAISE_SIGNAL_STATUS_INVALID_STATE 			((g_raise_signal_status) 3)
 
 // for <g_kill>
 typedef uint8_t g_kill_status;
